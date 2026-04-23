@@ -1,0 +1,58 @@
+name: 🚀 Java API CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔍 Checkout Code
+        uses: actions/checkout@v3
+
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 📦 Build with Maven
+        run: mvn clean package -DskipTests
+
+      - name: 🧪 Run Tests
+        run: mvn test
+
+      - name: 🛠 Build Docker Image
+        run: docker build -t java-api .
+
+      - name: 🔐 Trivy Scan (Image)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: java-api
+          format: table
+          exit-code: 0
+          severity: HIGH,CRITICAL
+
+      - name: 📦 Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-api-artifact
+          path: target/*.jar
+
+  deploy-staging:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Download JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: java-api-artifact
+
+      - name: 🚀 Fake Deploy
+        run: |
+          echo "✅ Build concluído com sucesso!"
+          echo "📡 Simulando deploy para: https://staging.example.com"
